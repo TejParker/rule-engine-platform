@@ -4,6 +4,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 
 /**
@@ -14,13 +16,14 @@ import java.io.IOException;
  * @Desc: 学大数据，上多易教育
  *   hbase的客户端编程示例
  **/
+@Slf4j
 public class Demo1 {
 
     public static void main(String[] args) throws IOException {
 
         // 准备连接参数
         Configuration conf = HBaseConfiguration.create();
-        conf.set("hbase.zookeeper.quorum","doitedu01:2181,doitedu02:2181,doitedu03:2181");
+        conf.set("hbase.zookeeper.quorum","172.27.170.34:2181");
 
         // 创建连接
         Connection conn = ConnectionFactory.createConnection(conf);

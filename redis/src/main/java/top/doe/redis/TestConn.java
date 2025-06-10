@@ -6,9 +6,12 @@ public class TestConn {
     public static void main(String[] args) {
 
 
-        Jedis jedis = new Jedis("192.168.10.7", 6379);
+        Jedis jedis = new Jedis("172.27.170.34", 6379);
+        jedis.auth("123456");
         String pong = jedis.ping();
         System.out.println(pong);
+
+        jedis.close();
 
 
     }

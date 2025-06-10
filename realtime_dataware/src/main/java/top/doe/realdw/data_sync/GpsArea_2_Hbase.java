@@ -10,7 +10,7 @@ public class GpsArea_2_Hbase {
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.enableCheckpointing(5000, CheckpointingMode.EXACTLY_ONCE);
-        env.getCheckpointConfig().setCheckpointStorage("file:///d:/ckpt");
+        env.getCheckpointConfig().setCheckpointStorage("file:///tmp/checkpoints");
         // 参数： execution.checkpointing.timeout = 默认 10min
         env.getCheckpointConfig().setCheckpointTimeout(10000);
         // execution.checkpointing.tolerable-failed-checkpoints = 0 未生效
@@ -30,7 +30,7 @@ public class GpsArea_2_Hbase {
                         "   region string                                        "+
                         " ) WITH (                                               "+
                         "    'connector' = 'jdbc',                               "+
-                        "    'url' = 'jdbc:mysql://doitedu01:3306/realtime_dw',  "+
+                        "    'url' = 'jdbc:mysql://172.27.170.34:3306/realtime_dw',  "+
                         "    'table-name' = 'gps_area',                          "+
                         "    'driver' = 'com.mysql.cj.jdbc.Driver',              "+
                         "    'username' = 'root',                                "+
@@ -48,7 +48,7 @@ public class GpsArea_2_Hbase {
                         " ) WITH (                                             "+
                         "  'connector' = 'hbase-2.2',                          "+
                         "  'table-name' = 'dim_geo_area',                      "+
-                        "  'zookeeper.quorum' = 'doitedu01:2181'               "+
+                        "  'zookeeper.quorum' = '172.27.170.34:2181'               "+
                         " )                                                    "
         );
 

@@ -23,7 +23,8 @@ public class RedisAnli {
     public static void main(String[] args) {
 
         Random random = new Random();
-        Jedis jedis = new Jedis("doitedu01", 6379);
+        Jedis jedis = new Jedis("172.27.170.34", 6379);
+        jedis.auth("123456");
 
         System.out.print("请输入登录手机号:");
         Scanner scanner = new Scanner(System.in);
