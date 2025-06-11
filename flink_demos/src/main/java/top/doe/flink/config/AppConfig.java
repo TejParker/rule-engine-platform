@@ -179,4 +179,25 @@ public class AppConfig {
             return getString("app.version", "1.0.0");
         }
     }
+
+    /**
+     * Kafka配置
+     */
+    public static class Kafka {
+        public static String getBootstrapServers() {
+            return getString("bootstrap.servers");
+        }
+
+        public static String getGroupId() {
+            return getString("kafka.group.id");
+        }
+
+        public static String getClientIdPrefix() {
+            return getString("kafka.client.id.prefix");
+        }
+
+        public static String getTopics() {
+            return getString("kafka.topics");
+        }
+    }
 } 

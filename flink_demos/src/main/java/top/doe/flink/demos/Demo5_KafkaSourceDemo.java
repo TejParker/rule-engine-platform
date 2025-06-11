@@ -13,6 +13,7 @@ import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
+import top.doe.flink.config.AppConfig;
 
 import java.util.regex.Pattern;
 
@@ -26,24 +27,33 @@ import java.util.regex.Pattern;
  **/
 public class Demo5_KafkaSourceDemo {
     public static void main(String[] args) throws Exception {
+        // 显示当前配置环境信息
+        System.out.println("=== 应用程序启动 ===");
+        System.out.println("当前配置环境: " + AppConfig.getCurrentProfile());
+        System.out.println("应用名称: " + AppConfig.App.getName());
+        System.out.println("应用版本: " + AppConfig.App.getVersion());
+        System.out.println("==================");
+
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(1);
+        // 从配置文件读取并行度设置
+        env.setParallelism(AppConfig.App.getParallelism());
 
         // 构建一个kafkaSource对象
         KafkaSource<String> source = KafkaSource.<String>builder()
                 .setStartingOffsets(OffsetsInitializer.committedOffsets(OffsetResetStrategy.LATEST))
-                .setGroupId("g001")
-                .setClientIdPrefix("flink-c-")
+                .setGroupId(AppConfig.Kafka.getGroupId())
+                .setClientIdPrefix(AppConfig.Kafka.getClientIdPrefix())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
-                .setBootstrapServers("doitedu01:9092,doitedu02:9092,doitedu03:9092")
-                .setTopics("od")
+                .setBootstrapServers(AppConfig.Kafka.getBootstrapServers())
+                .setTopics(AppConfig.Kafka.getTopics())
                 .build();
 
 
         // 用env使用该source获取流
-        DataStreamSource<String> stream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "随便");
+        DataStreamSource<String> stream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "kafkaSource");
 
         // {"order_id":1,"order_amt":38.8,"order_type":"团购"}
+        // {"order_id":1,"order_amt":40.8,"order_type":"团购"}
 
         // json解析
         SingleOutputStreamOperator<Order> orderStream
@@ -61,7 +71,7 @@ public class Demo5_KafkaSourceDemo {
 
 
         // 触发job
-        env.execute("作业名称");
+        env.execute(AppConfig.App.getName());
 
 
 

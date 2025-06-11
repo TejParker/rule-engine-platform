@@ -14,6 +14,7 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
 import scala.Serializable;
+import top.doe.flink.config.AppConfig;
 
 import java.util.List;
 
@@ -38,12 +39,23 @@ import java.util.List;
 public class Demo4_ReduceExec {
 
     public static void main(String[] args) throws Exception {
-
+        // 显示当前配置环境信息
+        System.out.println("=== 应用程序启动 ===");
+        System.out.println("当前配置环境: " + AppConfig.getCurrentProfile());
+        System.out.println("应用名称: " + AppConfig.App.getName());
+        System.out.println("应用版本: " + AppConfig.App.getVersion());
+        System.out.println("==================");
+        
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(1);
+        // 从配置文件读取并行度设置
+        env.setParallelism(AppConfig.App.getParallelism());
 
-        // 1.用source算子加载数据
-        DataStreamSource<String> stream = env.socketTextStream("doitedu01", 7878);
+        // 1.用source算子加载数据 - 从配置文件读取socket连接信息
+        String socketHost = AppConfig.Socket.getHost();
+        int socketPort = AppConfig.Socket.getPort();
+        System.out.println("连接到Socket服务: " + socketHost + ":" + socketPort);
+        
+        DataStreamSource<String> stream = env.socketTextStream(socketHost, socketPort);
 
         // 2.解析json
         SingleOutputStreamOperator<Order> orderStream = stream.map(new MapFunction<String, Order>() {
