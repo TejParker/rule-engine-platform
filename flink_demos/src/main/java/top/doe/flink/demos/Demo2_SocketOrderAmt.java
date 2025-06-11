@@ -35,7 +35,7 @@ public class Demo2_SocketOrderAmt {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(1);
 
-        DataStreamSource<String> stream = env.socketTextStream("doitedu01", 9898);
+        DataStreamSource<String> stream = env.socketTextStream("172.27.170.34", 9898);
 
         // 解析json
         SingleOutputStreamOperator<Order> orderStream = stream.map(new MapFunction<String, Order>() {
@@ -67,7 +67,7 @@ public class Demo2_SocketOrderAmt {
          * group by order_type
          */
         SingleOutputStreamOperator<Order> maxResult = keyedStream.max("order_amt");
-        //maxResult.print();
+        maxResult.print("maxResult>");
 
         // max算子：输入的类型 和 聚合的结果类型是一致；
         // 只要最大值发生变化，那么结果就是最大值的这条数据
@@ -84,11 +84,13 @@ public class Demo2_SocketOrderAmt {
          * select order_id,receive_address,order_type,order_amt from tmp where rn=1
          */
         SingleOutputStreamOperator<Order> maxByResult = keyedStream.maxBy("order_amt");
-        maxByResult.print();
+        maxByResult.print("maxByResult>");
 
 
         SingleOutputStreamOperator<Order> minResult = keyedStream.min("order_amt");
+        minResult.print("minResult>");
         SingleOutputStreamOperator<Order> minByResult = keyedStream.minBy("order_amt");
+        minByResult.print("minByResult>");
 
 
         // 提交job

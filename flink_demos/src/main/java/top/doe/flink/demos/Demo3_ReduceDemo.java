@@ -8,6 +8,7 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import top.doe.flink.config.AppConfig;
 
 /**
  * @Author: 深似海
@@ -30,11 +31,23 @@ public class Demo3_ReduceDemo {
 
     public static void main(String[] args) throws Exception {
 
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(1);
+        // 显示当前配置环境信息
+        System.out.println("=== 应用程序启动 ===");
+        System.out.println("当前配置环境: " + AppConfig.getCurrentProfile());
+        System.out.println("应用名称: " + AppConfig.App.getName());
+        System.out.println("应用版本: " + AppConfig.App.getVersion());
+        System.out.println("==================");
 
-        // 1.用source算子加载数据
-        DataStreamSource<String> stream = env.socketTextStream("doitedu01", 7878);
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        // 从配置文件读取并行度设置
+        env.setParallelism(AppConfig.App.getParallelism());
+
+        // 1.用source算子加载数据 - 从配置文件读取socket连接信息
+        String socketHost = AppConfig.Socket.getHost();
+        int socketPort = AppConfig.Socket.getPort();
+        System.out.println("连接到Socket服务: " + socketHost + ":" + socketPort);
+        
+        DataStreamSource<String> stream = env.socketTextStream(socketHost, socketPort);
 
         // 2.解析json
         SingleOutputStreamOperator<Order> orderStream = stream.map(new MapFunction<String, Order>() {
@@ -44,9 +57,9 @@ public class Demo3_ReduceDemo {
             }
         });
 
-        /* *
+
         // keyBy分组： 按订单类型
-        KeyedStream<Order, String> keyedStream = orderStream.keyBy(od -> od.order_type);
+        /* KeyedStream<Order, String> keyedStream = orderStream.keyBy(od -> od.order_type);
 
         // 在 KeyedStream 上调用简单聚合算子：reduce
         // 各类订单的 平均订单额，最大订单金额，最小订单金额
@@ -56,8 +69,8 @@ public class Demo3_ReduceDemo {
             public Order reduce(Order od1, Order od2) throws Exception {
                 return null;
             }
-        });
-        */
+        }); */
+
 
         // 3.把输入数据order，转换成 符合需求的 累加器结构
         SingleOutputStreamOperator<OrderAgg> aggBeanStream = orderStream.map(new MapFunction<Order, OrderAgg>() {
@@ -96,6 +109,9 @@ public class Demo3_ReduceDemo {
                 // 最小订单额更新
                 agg.minAmt = Math.min(agg.minAmt, newData.minAmt);
 
+                // 平均订单额更新
+                agg.avgAmt = agg.sum / agg.order_cnt;
+
                 return agg;
             }
         });
@@ -104,8 +120,8 @@ public class Demo3_ReduceDemo {
         // 调用sink算子输出结果
         resultStream.print();
 
-        // 触发job执行
-        env.execute();
+        // 触发job执行 - 使用配置的应用名称
+        env.execute(AppConfig.App.getName());
 
 
     }
@@ -122,6 +138,7 @@ public class Demo3_ReduceDemo {
     }
 
 
+    @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class OrderAgg {
@@ -133,67 +150,6 @@ public class Demo3_ReduceDemo {
 
         private Double avgAmt;
 
-        public String getOrder_type() {
-            return order_type;
-        }
-
-        public void setOrder_type(String order_type) {
-            this.order_type = order_type;
-        }
-
-        public double getSum() {
-            return sum;
-        }
-
-        public void setSum(double sum) {
-            this.sum = sum;
-        }
-
-        public int getOrder_cnt() {
-            return order_cnt;
-        }
-
-        public void setOrder_cnt(int order_cnt) {
-            this.order_cnt = order_cnt;
-        }
-
-        public double getMaxAmt() {
-            return maxAmt;
-        }
-
-        public void setMaxAmt(double maxAmt) {
-            this.maxAmt = maxAmt;
-        }
-
-        public double getMinAmt() {
-            return minAmt;
-        }
-
-        public void setMinAmt(double minAmt) {
-            this.minAmt = minAmt;
-        }
-
-
-        public Double getAvgAmt(){
-            return this.order_cnt == 0 ? this.sum : this.sum / this.order_cnt;
-        }
-
-        public void setAvgAmt(Double avgAmt) {
-            this.avgAmt = avgAmt;
-        }
-
-        @Override
-        public String toString() {
-            return "OrderAgg{" +
-                    "order_type='" + order_type + '\'' +
-                    ", sum=" + sum +
-                    ", order_cnt=" + order_cnt +
-                    ", maxAmt=" + maxAmt +
-                    ", minAmt=" + minAmt +
-                    ", avgAmt=" + getAvgAmt() +
-                    '}';
-        }
     }
-
 
 }

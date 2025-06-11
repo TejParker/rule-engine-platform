@@ -10,11 +10,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
 
 /**
- * @Author: 深似海
- * @Site: <a href="www.51doit.com">多易教育</a>
- * @QQ: 657270652
- * @Date: 2024/10/10
- * @Desc: 学大数据，上多易教育
  *   从socket服务器读取数据，做单词统计
  **/
 public class Demo1_SocketWordcount {
@@ -26,7 +21,7 @@ public class Demo1_SocketWordcount {
         env.setParallelism(2);
 
         // 加载数据源得到流
-        DataStreamSource<String> stream = env.socketTextStream("doitedu01", 9898);
+        DataStreamSource<String> stream = env.socketTextStream("172.27.170.34", 9898);
 
         // 在流上调算子安排运算逻辑
         // 1. 切单词，生成元组对
