@@ -3,6 +3,8 @@ package top.doe.flink.demos;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import top.doe.flink.config.AppConfig;
+
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
@@ -14,11 +16,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 /**
- * @Author: 深似海
- * @Site: <a href="www.51doit.com">多易教育</a>
- * @QQ: 657270652
- * @Date: 2024/10/11
- * @Desc: 学大数据，上多易教育
+ * @Author: cxw
  *   自定义SourceFunction示例
  **/
 public class Demo8_CustomJdbcSource {
@@ -36,7 +34,7 @@ public class Demo8_CustomJdbcSource {
             @Override
             public void run(SourceContext<Person> ctx) throws Exception {
 
-                connection = DriverManager.getConnection("jdbc:mysql://doitedu01:3306/doit50", "root", "ABC123.abc123");
+                connection = DriverManager.getConnection(AppConfig.MySQL.getUrl(), AppConfig.MySQL.getUsername(), AppConfig.MySQL.getPassword());
                 stmt = connection.createStatement();
                 resultSet = stmt.executeQuery("select id,name,gender,salary from t_person");
 

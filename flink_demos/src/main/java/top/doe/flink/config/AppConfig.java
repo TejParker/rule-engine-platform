@@ -200,4 +200,21 @@ public class AppConfig {
             return getString("kafka.topics");
         }
     }
+
+    /**
+     * MySQL配置
+     */
+    public static class MySQL {
+        public static String getUrl() {
+            return getString("jdbc.url");
+        }
+
+        public static String getUsername() {
+            return getString("jdbc.username");
+        }
+
+        public static String getPassword() {
+            return getString("jdbc.password");
+        }
+    }
 } 
