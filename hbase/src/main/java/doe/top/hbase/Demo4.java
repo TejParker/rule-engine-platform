@@ -10,11 +10,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 /**
- * @Author: 深似海
- * @Site: <a href="www.51doit.com">多易教育</a>
- * @QQ: 657270652
- * @Date: 2024/9/29
- * @Desc: 学大数据，上多易教育
+ * @Author: cxw
  *
  **/
 public class Demo4 {
