@@ -178,6 +178,10 @@ public class AppConfig {
         public static String getVersion() {
             return getString("app.version", "1.0.0");
         }
+
+        public static String getCheckpointStorage() {
+            return getString("app.checkpoint.storage", "file:///tmp/flink_demos/ckpt");
+        }
     }
 
     /**
@@ -215,6 +219,22 @@ public class AppConfig {
 
         public static String getPassword() {
             return getString("jdbc.password");
+        }
+
+        public static String getHost() {
+            return getString("jdbc.host");
+        }
+
+        public static int getPort() {
+            return getInt("jdbc.port");
+        }
+
+        public static String getDatabaseList() {
+            return getString("jdbc.cdc.databaseList");
+        }
+
+        public static String getTableList() {
+            return getString("jdbc.cdc.tableList");
         }
     }
 } 

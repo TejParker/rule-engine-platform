@@ -44,5 +44,38 @@ sudo docker run -d \
 sudo docker exec -it jeeplus-mysql mysql -uroot -proot -e "SHOW VARIABLES LIKE 'log_bin';"
 ```
 
+5. 创建数据库
+```shell
+create database test;
+-- 设置字符串（如果字符集有问题的话）
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+```
+
+创建表
+```shell
+-- 创建表
+CREATE TABLE t_person (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    gender VARCHAR(10) NOT NULL,
+    salary DECIMAL(10,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+插入数据
+```shell
+INSERT INTO t_person (name, gender, salary) VALUES 
+('张三', '男', 8500.00),
+('李四', '女', 9200.00),
+('王五', '男', 7800.00),
+('赵六', '女', 10500.00),
+('孙七', '男', 6900.00),
+('周八', '女', 11200.00),
+('吴九', '男', 8800.00),
+('郑十', '女', 9600.00),
+('陈十一', '男', 7200.00),
+('刘十二', '女', 10800.00);
+```
 
 

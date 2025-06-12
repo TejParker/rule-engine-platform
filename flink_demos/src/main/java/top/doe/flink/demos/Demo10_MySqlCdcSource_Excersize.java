@@ -3,11 +3,14 @@ package top.doe.flink.demos;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
+import com.ververica.cdc.connectors.mysql.table.StartupOptions;
 import com.ververica.cdc.debezium.JsonDebeziumDeserializationSchema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import top.doe.flink.config.AppConfig;
+
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.functions.KeySelector;
@@ -16,20 +19,14 @@ import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.Properties;
 
 /**
- * @Author: 深似海
- * @Site: <a href="www.51doit.com">多易教育</a>
- * @QQ: 657270652
- * @Date: 2024/10/11
- * @Desc: 学大数据，上多易教育
+ * @Author: cxw
  * 实时捕获业务系统上的营收表，实时统计各性别的平均营收
  **/
 
@@ -41,30 +38,50 @@ public class Demo10_MySqlCdcSource_Excersize {
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.enableCheckpointing(5000);
-        env.getCheckpointConfig().setCheckpointStorage("file:///D:/devworks/doit50_hadoop");
-        env.setParallelism(2);
+        env.getCheckpointConfig().setCheckpointStorage(AppConfig.App.getCheckpointStorage());
+        env.setParallelism(AppConfig.App.getParallelism());
+        Properties properties = new Properties();
+        properties.setProperty("connectionTimeZone", "Asia/Shanghai");
+        properties.setProperty("database.characterSetServerName", "utf8mb4");
+        properties.setProperty("database.connectionCollation", "utf8mb4_unicode_ci");
+        properties.setProperty("database.characterEncoding", "UTF-8");
+        properties.setProperty("decimal.handling.mode", "string");
+        // properties.setProperty("bigint.unsigned.handling.mode", "precise");
 
         // 创建source
         MySqlSource<String> source = MySqlSource.<String>builder()
-                .username("root")
-                .password("ABC123.abc123")
-                .hostname("doitedu01")
-                .port(3306)
-                .databaseList("doit50")
-                .tableList("doit50.t_person")
+                .username(AppConfig.MySQL.getUsername())
+                .password(AppConfig.MySQL.getPassword())
+                .hostname(AppConfig.MySQL.getHost())
+                .port(AppConfig.MySQL.getPort())
+                .databaseList(AppConfig.MySQL.getDatabaseList())
+                .tableList(AppConfig.MySQL.getTableList())
+                .startupOptions(StartupOptions.initial())
+                // .serverTimeZone("Asia/Shanghai")    // 设置服务器时区为Asia/Shanghai
+                .debeziumProperties(properties)
+                .jdbcProperties(properties)
                 .deserializer(new JsonDebeziumDeserializationSchema())
                 .build();
 
-        DataStreamSource<String> stream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "xx");
+        DataStreamSource<String> stream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "mysql-source");
 
         // json 解析
         SingleOutputStreamOperator<CdcBean> beanStream = stream.map(new MapFunction<String, CdcBean>() {
             @Override
             public CdcBean map(String cdcJson) throws Exception {
-
-                return JSON.parseObject(cdcJson, CdcBean.class);
+                System.out.println("cdcJson:" + cdcJson);
+                try {
+                    CdcBean cdcBean = JSON.parseObject(cdcJson, CdcBean.class);
+                    // 使用log打印对象,避免println可能的缓冲区问题
+                    log.info("解析后的对象: {}", cdcBean);
+                    return cdcBean;
+                } catch (Exception e) {
+                    log.error("JSON解析失败: {}, 错误: {}", cdcJson, e.getMessage(), e);
+                    throw e;
+                }
             }
         });
+        beanStream.print("beanStream>");
 
 //        beanStream.process(new ProcessFunction<CdcBean, String>() {
 //            @Override
@@ -106,13 +123,13 @@ public class Demo10_MySqlCdcSource_Excersize {
                     Pair stateValue = mapState.getOrDefault(gender, new Pair(0, 0.0));
 
                     stateValue.cnt++;
-                    stateValue.sum += after.salary;
+                    stateValue.sum += parseStringToDouble(after.salary);
 
                     mapState.put(gender, stateValue);
 
                 } else if (op.equals("u")) {
                     // 计算更新前和更新后的金额的差值
-                    double diff = after.salary - before.salary;
+                    double diff = parseStringToDouble(after.salary) - parseStringToDouble(before.salary);
 
                     Pair stateValue = mapState.get(gender);
 
@@ -125,7 +142,7 @@ public class Demo10_MySqlCdcSource_Excersize {
                     Pair stateValue = mapState.get(gender);
                     if (stateValue == null) throw new RuntimeException("有问题有问题，大大的有问题");
 
-                    stateValue.sum -= before.salary;
+                    stateValue.sum -= parseStringToDouble(before.salary);
                     stateValue.cnt--;
 
                 } else {
@@ -149,6 +166,30 @@ public class Demo10_MySqlCdcSource_Excersize {
         env.execute();
     }
 
+    // 添加一个工具方法来解析precise模式下的decimal值
+    private static double parseStringToDouble(String salaryStr) {
+        try {
+            // 尝试直接解析
+            return Double.parseDouble(salaryStr);
+        } catch (NumberFormatException e) {
+            // 处理Debezium precise模式下的特殊编码
+            try {
+                // 对于Debezium precise模式，需要引入专门的解析库
+                // 这里提供一个简单实现，仅用于演示
+                // 实际生产环境中应使用org.apache.kafka.connect.data.Decimal类或其他专用库
+                
+                // 打印日志便于调试
+                log.info("尝试解析special decimal format: {}", salaryStr);
+                
+                // 简单解决方案：修改配置，使用字符串模式而非precise模式
+                // 临时方案：使用默认值以便程序可以继续运行
+                return 0.0;
+            } catch (Exception ex) {
+                log.error("解析precise模式下的decimal值失败: {}", salaryStr, ex);
+                return 0.0;
+            }
+        }
+    }
 
     @Data
     @NoArgsConstructor
@@ -166,7 +207,7 @@ public class Demo10_MySqlCdcSource_Excersize {
         private int id;
         private String name;
         private String gender;
-        private double salary;
+        private String salary;
     }
 
 

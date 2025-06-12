@@ -34,7 +34,11 @@ public class Demo8_CustomJdbcSource {
             @Override
             public void run(SourceContext<Person> ctx) throws Exception {
 
-                connection = DriverManager.getConnection(AppConfig.MySQL.getUrl(), AppConfig.MySQL.getUsername(), AppConfig.MySQL.getPassword());
+                connection = DriverManager.getConnection(
+                    AppConfig.MySQL.getUrl(), 
+                    AppConfig.MySQL.getUsername(), 
+                    AppConfig.MySQL.getPassword());
+                    
                 stmt = connection.createStatement();
                 resultSet = stmt.executeQuery("select id,name,gender,salary from t_person");
 

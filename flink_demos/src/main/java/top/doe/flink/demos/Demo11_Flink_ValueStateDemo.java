@@ -3,11 +3,14 @@ package top.doe.flink.demos;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
+import com.ververica.cdc.connectors.mysql.table.StartupOptions;
 import com.ververica.cdc.debezium.JsonDebeziumDeserializationSchema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import top.doe.flink.config.AppConfig;
+
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RuntimeContext;
@@ -27,11 +30,7 @@ import org.apache.flink.util.Collector;
 import java.io.Serializable;
 
 /**
- * @Author: 深似海
- * @Site: <a href="www.51doit.com">多易教育</a>
- * @QQ: 657270652
- * @Date: 2024/10/11
- * @Desc: 学大数据，上多易教育
+ * @Author: cxw
  * 实时捕获业务系统上的营收表，实时统计各性别的平均营收
  **/
 
@@ -43,17 +42,18 @@ public class Demo11_Flink_ValueStateDemo {
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.enableCheckpointing(5000);
-        env.getCheckpointConfig().setCheckpointStorage("file:///D:/devworks/doit50_hadoop");
-        env.setParallelism(2);
+        env.getCheckpointConfig().setCheckpointStorage(AppConfig.App.getCheckpointStorage());
+        env.setParallelism(AppConfig.App.getParallelism());
 
         // 创建source
         MySqlSource<String> source = MySqlSource.<String>builder()
-                .username("root")
-                .password("ABC123.abc123")
-                .hostname("doitedu01")
-                .port(3306)
-                .databaseList("doit50")
-                .tableList("doit50.t_person")
+                .username(AppConfig.MySQL.getUsername())
+                .password(AppConfig.MySQL.getPassword())
+                .hostname(AppConfig.MySQL.getHost())
+                .port(AppConfig.MySQL.getPort())
+                .databaseList(AppConfig.MySQL.getDatabaseList())
+                .tableList(AppConfig.MySQL.getTableList())
+                .startupOptions(StartupOptions.initial())
                 .deserializer(new JsonDebeziumDeserializationSchema())
                 .build();
 
