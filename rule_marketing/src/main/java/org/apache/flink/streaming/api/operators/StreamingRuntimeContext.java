@@ -77,6 +77,13 @@ public class StreamingRuntimeContext extends AbstractRuntimeUDFContext {
         return operator;
     }
 
+    /**
+     * @VisibleForTesting 注解表示这个构造方法仅用于测试目的。
+     * 这个注解的主要作用是:
+     * 1. 提醒其他开发者这个方法只应该在测试代码中使用
+     * 2. 允许测试代码访问这个本应是包私有的方法
+     * 3. 有些静态代码分析工具会特殊处理带有这个注解的代码
+     */
     @VisibleForTesting
     public StreamingRuntimeContext(
             AbstractStreamOperator<?> operator,

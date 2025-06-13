@@ -1,6 +1,5 @@
 package other.state_clear;
 
-import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.state.MapStateDescriptor;
@@ -13,19 +12,42 @@ import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.util.Collector;
 
+/**
+ * 测试数据说明:
+ * 
+ * 1. 启动两个终端,分别运行:
+ *    终端1: nc -lk 9991  # 用于发送事件数据
+ *    终端2: nc -lk 9992  # 用于发送广播元数据
+ * 
+ * 2. 在终端1中输入以下事件数据(每行一个):
+ *    a
+ *    a  # 此时输出: aa
+ *    b  
+ *    b  # 此时输出: bb
+ *    c
+ *    c  # 此时输出: cc
+ * 
+ * 3. 在终端2中输入以下广播数据:
+ *    X   # 输入X会触发状态清理,清理a/b/c的状态
+ * 
+ * 4. 清理后再次在终端1输入:
+ *    a   # 此时输出: a (因为之前的状态被清理了)
+ *    b   # 此时输出: b
+ *    c   # 此时输出: c
+ */
 public class TestMain {
     public static void main(String[] args) throws Exception {
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.enableCheckpointing(5000);
-        env.getCheckpointConfig().setCheckpointStorage("file:///d:/ckpt");
+        env.getCheckpointConfig().setCheckpointStorage("file:///tmp/operator_ckpt");
 
         env.setParallelism(1);
 
 
-        DataStreamSource<String> events = env.socketTextStream("doitedu01", 9991);
+        DataStreamSource<String> events = env.socketTextStream("localhost", 9991);
 
-        DataStreamSource<String> meta = env.socketTextStream("doitedu01", 9992);
+        DataStreamSource<String> meta = env.socketTextStream("localhost", 9992);
         BroadcastStream<String> meta_bc = meta.broadcast(new MapStateDescriptor<String, String>("bc_state", String.class, String.class));
 
 
@@ -82,7 +104,7 @@ public class TestMain {
                             }
                         }
                     }
-                }).print();
+                }).print("result");
 
         env.execute();
 
