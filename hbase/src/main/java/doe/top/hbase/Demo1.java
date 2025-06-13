@@ -9,11 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 
 /**
- * @Author: 深似海
- * @Site: <a href="www.51doit.com">多易教育</a>
- * @QQ: 657270652
- * @Date: 2024/9/29
- * @Desc: 学大数据，上多易教育
+ * @Author: cxw
  *   hbase的客户端编程示例
  **/
 @Slf4j
