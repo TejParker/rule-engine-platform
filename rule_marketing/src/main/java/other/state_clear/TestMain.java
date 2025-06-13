@@ -12,6 +12,8 @@ import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.util.Collector;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * 测试数据说明:
  * 
@@ -29,12 +31,14 @@ import org.apache.flink.util.Collector;
  * 
  * 3. 在终端2中输入以下广播数据:
  *    X   # 输入X会触发状态清理,清理a/b/c的状态
+ *    注意: 广播数据会发送给所有的并行算子实例(operator)
  * 
  * 4. 清理后再次在终端1输入:
  *    a   # 此时输出: a (因为之前的状态被清理了)
  *    b   # 此时输出: b
  *    c   # 此时输出: c
  */
+@Slf4j
 public class TestMain {
     public static void main(String[] args) throws Exception {
 
@@ -42,11 +46,12 @@ public class TestMain {
         env.enableCheckpointing(5000);
         env.getCheckpointConfig().setCheckpointStorage("file:///tmp/operator_ckpt");
 
-        env.setParallelism(1);
+        env.setParallelism(3);
 
 
         DataStreamSource<String> events = env.socketTextStream("localhost", 9991);
 
+        // 广播流会将数据发送给所有的下游operator实例
         DataStreamSource<String> meta = env.socketTextStream("localhost", 9992);
         BroadcastStream<String> meta_bc = meta.broadcast(new MapStateDescriptor<String, String>("bc_state", String.class, String.class));
 
@@ -66,7 +71,7 @@ public class TestMain {
 
                     @Override
                     public void processElement(String s, KeyedBroadcastProcessFunction<String, String, String, String>.ReadOnlyContext readOnlyContext, Collector<String> collector) throws Exception {
-
+                        log.info("current key: {}, processElement: {}", readOnlyContext.getCurrentKey(), s);
                         synchronized (lock) {
                             st.add(s);
 
@@ -82,12 +87,22 @@ public class TestMain {
                     @Override
                     public void processBroadcastElement(String s, KeyedBroadcastProcessFunction<String, String, String, String>.Context context, Collector<String> collector) throws Exception {
 
+                        // 当前广播所在的operator实例
+                        StreamingRuntimeContext runtimeContext = (StreamingRuntimeContext) getRuntimeContext();
+                        AbstractStreamOperator<?> operator = runtimeContext.getOperator();
+                        log.info("current operator: {}", operator.getCurrentKey());
+
+                        log.info("processBroadcastElement: {}", s);
+                        if (operator.getCurrentKey() == null) {
+                            return;
+                        }
+                        // 广播流会发送给所有的并行算子实例(operator)
                         String[] ids = {"a", "b", "c"};
                         if (s.equals("X")) {
 
                             synchronized (lock) {
-                                StreamingRuntimeContext runtimeContext = (StreamingRuntimeContext) getRuntimeContext();
-                                AbstractStreamOperator<?> operator = runtimeContext.getOperator();
+                                // StreamingRuntimeContext runtimeContext = (StreamingRuntimeContext) getRuntimeContext();
+                                // AbstractStreamOperator<?> operator = runtimeContext.getOperator();
 
                                 Object currentKey = operator.getCurrentKey();
 
