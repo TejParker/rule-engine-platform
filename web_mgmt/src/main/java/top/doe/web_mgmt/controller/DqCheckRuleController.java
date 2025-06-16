@@ -10,8 +10,6 @@ import top.doe.web_mgmt.utils.ConnectionFactory;
 
 import java.sql.*;
 import java.util.HashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @RestController
 public class DqCheckRuleController {

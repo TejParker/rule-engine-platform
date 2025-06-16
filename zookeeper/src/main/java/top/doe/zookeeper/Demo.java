@@ -13,7 +13,7 @@ public class Demo {
 
         // 创建zookeeper的客户端对象
         ZooKeeper zkCli = new ZooKeeper(
-                "doitedu01:2181,doitedu02:2181,doitedu03:2181",
+                "172.27.170.34:2181",
                 5000,
                 new Watcher() {
                     @Override

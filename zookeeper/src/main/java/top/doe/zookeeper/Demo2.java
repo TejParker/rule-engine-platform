@@ -12,7 +12,7 @@ public class Demo2 {
 
         // 创建zookeeper的客户端对象
         ZooKeeper zkCli = new ZooKeeper(
-                "doitedu01:2181,doitedu02:2181,doitedu03:2181",
+                "172.27.170.34:2181",
                 5000,
                 new Watcher() {
                     @Override
@@ -33,8 +33,17 @@ public class Demo2 {
 
         byte[] bytes = bout.toByteArray();
 
-        // 创建一个znode
+        // 首先创建父节点 /aa（如果不存在）
+        try {
+            zkCli.create("/aa", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            System.out.println("父节点 /aa 创建成功");
+        } catch (KeeperException.NodeExistsException e) {
+            System.out.println("父节点 /aa 已存在");
+        }
+
+        // 创建子节点 /aa/www
         String s = zkCli.create("/aa/www", bytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        System.out.println("节点创建成功：" + s);
 
 
         // 读取上面创建的znode的数据
